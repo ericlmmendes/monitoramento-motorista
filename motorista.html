@@ -3,66 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Motorista</title>
+    <title>Painel do Motorista - EvoCortes</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
             --primary: #2563eb;
             --success: #22c55e;
             --bg: #f8fafc;
         }
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: var(--bg); color: #334155; margin: 0; }
+        body { font-family: 'Inter', sans-serif; padding: 20px; background: #f1f5f9; color: #334155; margin: 0; }
         .card { 
             background: white; 
             padding: 24px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
             max-width: 450px; 
             margin: 20px auto; 
+            border: 1px solid #e2e8f0;
         }
-        h2 { margin-top: 0; font-size: 1.5rem; color: #0f172a; }
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #64748b; }
+        h2 { margin-top: 0; font-size: 1.5rem; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+        label { display: block; margin-top: 18px; font-weight: 600; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        
         select, input, button { 
             width: 100%; 
-            padding: 12px; 
+            padding: 14px; 
             margin: 8px 0; 
-            border-radius: 8px; 
+            border-radius: 10px; 
             border: 1px solid #cbd5e1; 
             box-sizing: border-box;
             font-size: 15px;
+            font-family: inherit;
         }
-        select:focus, input:focus { border-color: var(--primary); outline: none; }
+        select:focus, input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
         
-        button#btn-atualizar { 
+        .btn-main { 
             background: var(--primary); 
             color: white; 
             font-weight: 700; 
             border: none; 
             cursor: pointer; 
-            margin-top: 20px;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             transition: all 0.2s;
         }
-        button#btn-atualizar:hover { background: #1d4ed8; transform: translateY(-1px); }
+        .btn-main:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .btn-main:disabled { background: #94a3b8; cursor: not-allowed; }
         
         #coords { 
             font-size: 13px; 
-            color: #64748b; 
-            background: #f1f5f9; 
-            padding: 8px; 
-            border-radius: 6px; 
-            display: inline-block; 
-            margin-bottom: 10px;
+            color: #2563eb; 
+            background: #eff6ff; 
+            padding: 10px 15px; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #dbeafe;
         }
-        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 500; cursor: pointer; }
-        input[type="file"] { font-size: 12px; padding: 8px; background: #fafafa; }
+        .btn-logout { background: white; color: #64748b; border: 1px solid #e2e8f0; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-logout:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+
+        .file-upload { position: relative; }
+        .preview-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .preview-mini { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 2px solid #e2e8f0; display: none; }
+        
+        .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>Olá, <span id="nome-exibicao" style="color: var(--primary);"></span>! 👋</h2>
-        <p id="coords">📍 Localização: Obtendo coordenadas...</p>
+        <h2><i class="fa-solid fa-circle-user" style="color: var(--primary)"></i> Olá, <span id="nome-exibicao"></span>!</h2>
+        <div id="coords"><div class="status-dot"></div> <i class="fa-solid fa-location-crosshairs"></i> GPS: Obtendo sinal...</div>
         
-        <label>Qual o status agora?</label>
+        <label><i class="fa-solid fa-route"></i> Status da Viagem</label>
         <select id="status-viagem">
             <option value="Em deslocamento">🚚 Em deslocamento</option>
             <option value="No local">📍 No local</option>
@@ -70,33 +89,75 @@
             <option value="Descarregando">📥 Descarregando</option>
         </select>
 
-        <label>Sua Foto (Selfie):</label>
-        <input type="file" id="foto-motorista" accept="image/*">
+        <div class="file-upload">
+            <label><i class="fa-solid fa-camera"></i> Sua Foto (Selfie)</label>
+            <div class="preview-container">
+                <input type="file" id="foto-motorista" accept="image/*" capture="user">
+                <img id="pre-foto-m" class="preview-mini">
+            </div>
+        </div>
         
-        <label>Foto do Veículo:</label>
-        <input type="file" id="foto-carro" accept="image/*">
+        <div class="file-upload">
+            <label><i class="fa-solid fa-truck"></i> Foto do Veículo</label>
+            <div class="preview-container">
+                <input type="file" id="foto-carro" accept="image/*" capture="environment">
+                <img id="pre-foto-c" class="preview-mini">
+            </div>
+        </div>
 
-        <button id="btn-atualizar">ENVIAR ATUALIZAÇÃO</button>
-        <button onclick="location.href='index.html'" class="btn-logout">Sair do Sistema</button>
+        <button id="btn-atualizar" class="btn-main"><i class="fa-solid fa-cloud-arrow-up"></i> ENVIAR ATUALIZAÇÃO</button>
+        <button onclick="sair()" class="btn-logout"><i class="fa-solid fa-power-off"></i> Sair do Sistema</button>
     </div>
 
     <script type="module">
-        import { database, ref, update } from './BD.js';
+        import { database, ref, update, get } from './BD.js';
 
-        const motoristaNome = localStorage.getItem('motorista_nome') || 'Anonimo';
+        const motoristaNome = localStorage.getItem('motorista_nome');
+        
+        // Proteção de rota
+        if (!motoristaNome) {
+            window.location.href = 'index.html';
+        }
+
         document.getElementById('nome-exibicao').innerText = motoristaNome;
 
         let lat = 0, lon = 0;
         let fotoMotoBase64 = "", fotoCarroBase64 = "";
 
-        // Geolocalização
+        window.sair = () => {
+            localStorage.removeItem('motorista_nome');
+            window.location.href = 'index.html';
+        };
+
+        async function carregarDadosAnteriores() {
+            try {
+                const snapshot = await get(ref(database, 'motoristas/' + motoristaNome));
+                if (snapshot.exists()) {
+                    const d = snapshot.val();
+                    document.getElementById('status-viagem').value = d.status || "Em deslocamento";
+                    if(d.fotoMotorista) {
+                        fotoMotoBase64 = d.fotoMotorista;
+                        document.getElementById('pre-foto-m').src = d.fotoMotorista;
+                        document.getElementById('pre-foto-m').style.display = 'inline';
+                    }
+                    if(d.fotoCarro) {
+                        fotoCarroBase64 = d.fotoCarro;
+                        document.getElementById('pre-foto-c').src = d.fotoCarro;
+                        document.getElementById('pre-foto-c').style.display = 'inline';
+                    }
+                }
+            } catch (e) { console.error("Erro ao sincronizar dados iniciais."); }
+        }
+        carregarDadosAnteriores();
+
         navigator.geolocation.watchPosition(pos => {
             lat = pos.coords.latitude;
             lon = pos.coords.longitude;
-            document.getElementById('coords').innerText = `📍 Localização: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-        }, err => console.error(err), { enableHighAccuracy: true });
+            document.getElementById('coords').innerHTML = `<div class="status-dot"></div> <i class="fa-solid fa-location-dot"></i> GPS Ativo: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+        }, err => {
+            document.getElementById('coords').innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color:red"></i> GPS Desativado`;
+        }, { enableHighAccuracy: true });
 
-        // Helper para converter imagem em Base64
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -108,33 +169,35 @@
             const status = document.getElementById('status-viagem').value;
             const fileM = document.getElementById('foto-motorista').files[0];
             const fileC = document.getElementById('foto-carro').files[0];
+            const btn = document.getElementById('btn-atualizar');
 
-            const originalText = document.getElementById('btn-atualizar').innerText;
-            document.getElementById('btn-atualizar').innerText = "Enviando...";
-            document.getElementById('btn-atualizar').disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ENVIANDO...';
+            btn.disabled = true;
 
             try {
                 if(fileM) fotoMotoBase64 = await toBase64(fileM);
                 if(fileC) fotoCarroBase64 = await toBase64(fileC);
 
                 const updates = {};
-                updates['/motoristas/' + motoristaNome] = {
-                    nome: motoristaNome,
-                    status: status,
-                    lat: lat,
-                    lon: lon,
-                    fotoMotorista: fotoMotoBase64,
-                    fotoCarro: fotoCarroBase64,
-                    ultimaAtualizacao: new Date().toLocaleString()
-                };
+                updates['/motoristas/' + motoristaNome + '/status'] = status;
+                updates['/motoristas/' + motoristaNome + '/lat'] = lat;
+                updates['/motoristas/' + motoristaNome + '/lon'] = lon;
+                updates['/motoristas/' + motoristaNome + '/fotoMotorista'] = fotoMotoBase64;
+                updates['/motoristas/' + motoristaNome + '/fotoCarro'] = fotoCarroBase64;
+                updates['/motoristas/' + motoristaNome + '/ultimaAtualizacao'] = new Date().toLocaleString();
 
                 await update(ref(database), updates);
-                alert("Dados atualizados com sucesso!");
+                alert("✅ Informações atualizadas com sucesso!");
+                
+                // Atualiza previews
+                if(fileM) { document.getElementById('pre-foto-m').src = fotoMotoBase64; document.getElementById('pre-foto-m').style.display = 'inline'; }
+                if(fileC) { document.getElementById('pre-foto-c').src = fotoCarroBase64; document.getElementById('pre-foto-c').style.display = 'inline'; }
+                
             } catch (err) {
-                alert("Erro ao atualizar: " + err.message);
+                alert("❌ Erro ao atualizar: " + err.message);
             } finally {
-                document.getElementById('btn-atualizar').innerText = originalText;
-                document.getElementById('btn-atualizar').disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ENVIAR ATUALIZAÇÃO';
+                btn.disabled = false;
             }
         });
     </script>
