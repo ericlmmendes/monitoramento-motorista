@@ -50,7 +50,7 @@ function renderStatusBadge(status) {
   };
 
   const config = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
-  return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${config.className}">${config.label}</span>`;
+  return `<span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${config.className}">${config.label}</span>`;
 }
 
 function getStatusCounts(items) {
@@ -66,19 +66,28 @@ function getStatusCounts(items) {
 function setDetailPanel(item) {
   if (!item) return;
 
-  const mapUrl = `https://www.google.com/maps?q=${item.latitude},${item.longitude}&z=15&output=embed`;
-  mapFrame.src = mapUrl;
+  const lat = Number(item.latitude);
+  const lng = Number(item.longitude);
+  const mapUrl = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+  
+  if (mapFrame.src !== mapUrl) mapFrame.src = mapUrl;
 
   driverDetailName.textContent = item.driverName;
   driverDetailStatus.innerHTML = renderStatusBadge(item.status);
-  driverDetailPhoto.src = item.driverPhoto || 'https://placehold.co/200x120/EEF2FF/4338CA?text=Motorista';
-  vehicleDetailPhoto.src = item.vehiclePhoto || 'https://placehold.co/200x120/FEF3C7/92400E?text=Veículo';
-  detailCoords.textContent = `${Number(item.latitude).toFixed(5)}, ${Number(item.longitude).toFixed(5)}`;
-  detailTime.textContent = new Date(item.checkedAt || item.createdAt || Date.now()).toLocaleString('pt-BR');
+  driverDetailPhoto.src = item.driverPhoto || 'https://placehold.co/200x120?text=Sem+Foto';
+  vehicleDetailPhoto.src = item.vehiclePhoto || 'https://placehold.co/200x120?text=Sem+Foto';
+  detailCoords.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  
+  const dateObj = new Date(item.checkedAt || item.createdAt);
+  detailTime.textContent = dateObj.toLocaleString('pt-BR');
 }
 
 function loadDashboard() {
-  const items = Array.isArray(checkins) ? checkins : [];
+  // Ordenar check-ins por data decrescente (mais recente primeiro)
+  const items = (Array.isArray(checkins) ? checkins : []).sort((a, b) => {
+    return new Date(b.checkedAt || b.createdAt) - new Date(a.checkedAt || a.createdAt);
+  });
+
   const counts = getStatusCounts(items);
   statsCards.online.textContent = counts.online;
   statsCards.waiting.textContent = counts.waiting;
@@ -92,38 +101,38 @@ function loadDashboard() {
     : items.filter((item) => item.status === selectedFilter);
 
   if (!filtered.length) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">Nenhum motorista encontrado para este filtro.</td>
-      </tr>
-    `;
+    tableBody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-400 italic">Nenhum registro encontrado.</td></tr>`;
     return;
   }
 
   tableBody.innerHTML = filtered
     .map((item) => `
-      <tr class="cursor-pointer border-b border-slate-100 hover:bg-slate-50" data-id="${item.id}">
-        <td class="px-4 py-3">
+      <tr class="group cursor-pointer border-b border-slate-100 transition hover:bg-indigo-50/30" data-id="${item.id}">
+        <td class="px-4 py-4">
           <div class="flex items-center gap-3">
-            <img src="${item.driverPhoto || 'https://placehold.co/40x40/EEF2FF/4338CA?text=M'}" alt="Motorista" class="h-10 w-10 rounded-full object-cover border border-slate-200" />
+            <div class="relative">
+              <img src="${item.driverPhoto}" alt="" class="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-indigo-200" />
+              <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${item.status === 'em_deslocamento' ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+            </div>
             <div>
-              <div class="text-sm font-semibold text-slate-800">${item.driverName}</div>
-              <div class="text-xs text-slate-500">@${item.driverUsername}</div>
+              <div class="text-sm font-bold text-slate-800">${item.driverName}</div>
+              <div class="text-[10px] font-medium text-slate-400">@${item.driverUsername}</div>
             </div>
           </div>
         </td>
-        <td class="px-4 py-3 text-sm text-slate-700">${Number(item.latitude).toFixed(5)}, ${Number(item.longitude).toFixed(5)}</td>
-        <td class="px-4 py-3">${renderStatusBadge(item.status)}</td>
-        <td class="px-4 py-3 text-sm text-slate-700">${new Date(item.checkedAt || item.createdAt || Date.now()).toLocaleString('pt-BR')}</td>
-        <td class="px-4 py-3">
-          <div class="flex gap-2">
-            <img src="${item.driverPhoto || 'https://placehold.co/40x40/EEF2FF/4338CA?text=Foto'}" class="h-10 w-10 rounded-lg object-cover border border-slate-200" />
-            <img src="${item.vehiclePhoto || 'https://placehold.co/40x40/FEF3C7/92400E?text=Veículo'}" class="h-10 w-10 rounded-lg object-cover border border-slate-200" />
+        <td class="px-4 py-4 text-xs font-mono text-slate-500">${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}</td>
+        <td class="px-4 py-4">${renderStatusBadge(item.status)}</td>
+        <td class="px-4 py-4 text-xs text-slate-600 font-medium">${new Date(item.checkedAt || item.createdAt).toLocaleTimeString('pt-BR')}</td>
+        <td class="px-4 py-4">
+          <div class="flex -space-x-2">
+            <img src="${item.driverPhoto}" class="h-8 w-8 rounded-md object-cover border-2 border-white shadow-sm" />
+            <img src="${item.vehiclePhoto}" class="h-8 w-8 rounded-md object-cover border-2 border-white shadow-sm" />
           </div>
         </td>
-        <td class="px-4 py-3">
-          <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${item.locationAuthorized ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
-            ${item.locationAuthorized ? 'Autorizada' : 'Não autorizada'}
+        <td class="px-4 py-4">
+          <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${item.locationAuthorized ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}">
+            <span class="h-1.5 w-1.5 rounded-full ${item.locationAuthorized ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+            ${item.locationAuthorized ? 'GPS OK' : 'SEM GPS'}
           </span>
         </td>
       </tr>
@@ -134,10 +143,13 @@ function loadDashboard() {
     row.addEventListener('click', () => {
       const selected = items.find((item) => item.id === row.dataset.id);
       setDetailPanel(selected);
+      // Highlight visual
+      tableBody.querySelectorAll('tr').forEach(r => r.classList.remove('bg-indigo-50', 'ring-1', 'ring-indigo-200'));
+      row.classList.add('bg-indigo-50', 'ring-1', 'ring-indigo-200');
     });
   });
 
-  if (items.length) {
+  if (items.length && !document.querySelector('.bg-indigo-50')) {
     setDetailPanel(items[0]);
   }
 }
@@ -145,70 +157,41 @@ function loadDashboard() {
 statusFilter.addEventListener('change', () => loadDashboard());
 
 async function resolveAdminLogin(username, password) {
-  const cleanUsername = String(username || '').trim();
-  const cleanPassword = String(password || '').trim();
+  const dbUser = await getUserByUsername(username);
+  if (dbUser && String(dbUser.password) === password && dbUser.role === 'admin') return dbUser;
 
-  if (!cleanUsername || !cleanPassword) return null;
-
-  const dbUser = await getUserByUsername(cleanUsername);
-  if (dbUser && String(dbUser.password) === cleanPassword && String(dbUser.role).toLowerCase() === 'admin') {
-    return dbUser;
-  }
-
-  const legacyUser = LEGACY_ADMIN_USERS.find((item) => {
-    return item.username.toLowerCase() === cleanUsername.toLowerCase() && item.password === cleanPassword;
-  });
-
-  return legacyUser || null;
+  return LEGACY_ADMIN_USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password) || null;
 }
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-
   const username = document.getElementById('admin-username').value.trim();
   const password = document.getElementById('admin-password').value.trim();
   const user = await resolveAdminLogin(username, password);
 
   if (!user) {
     const errorBox = document.getElementById('admin-error');
-    errorBox.textContent = 'Credenciais inválidas. Tente: admin / admin123 ou EricLM / Evo@537361.';
     errorBox.classList.remove('hidden');
     return;
   }
 
   adminSession = user;
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  document.getElementById('admin-error').classList.add('hidden');
   showDashboard();
 });
 
 logoutBtn.addEventListener('click', () => {
   localStorage.removeItem(SESSION_KEY);
-  adminSession = null;
-  loginForm.reset();
-  showLogin();
+  location.reload();
 });
-
-async function hydrateCheckins() {
-  checkins = await loadCheckins();
-  if (adminSession) {
-    loadDashboard();
-  }
-}
 
 const savedSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
 if (savedSession) {
   adminSession = savedSession;
   showDashboard();
-} else {
-  showLogin();
 }
 
 subscribeCheckins((items) => {
   checkins = items;
-  if (adminSession) {
-    loadDashboard();
-  }
+  if (adminSession) loadDashboard();
 });
-
-hydrateCheckins();
