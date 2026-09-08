@@ -1,154 +1,142 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EVO Transportes | Check-in do Motorista</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif']
-            }
-          }
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Motorista</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #22c55e;
+            --bg: #f8fafc;
         }
-      };
-    </script>
-  </head>
-  <body class="min-h-screen bg-slate-950 text-slate-800">
-    <div class="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-10">
-      <div class="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-10 text-white">
-          <div class="flex items-center gap-3">
-            <div class="rounded-xl bg-white/10 p-3">
-              <i class="fa-solid fa-truck-fast text-2xl"></i>
-            </div>
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-indigo-100">EVO Transportes</p>
-              <h1 class="mt-2 text-3xl font-extrabold">Check-in do motorista</h1>
-            </div>
-          </div>
-        </div>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: var(--bg); color: #334155; margin: 0; }
+        .card { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            max-width: 450px; 
+            margin: 20px auto; 
+        }
+        h2 { margin-top: 0; font-size: 1.5rem; color: #0f172a; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #64748b; }
+        select, input, button { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            border: 1px solid #cbd5e1; 
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        select:focus, input:focus { border-color: var(--primary); outline: none; }
+        
+        button#btn-atualizar { 
+            background: var(--primary); 
+            color: white; 
+            font-weight: 700; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 20px;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s;
+        }
+        button#btn-atualizar:hover { background: #1d4ed8; transform: translateY(-1px); }
+        
+        #coords { 
+            font-size: 13px; 
+            color: #64748b; 
+            background: #f1f5f9; 
+            padding: 8px; 
+            border-radius: 6px; 
+            display: inline-block; 
+            margin-bottom: 10px;
+        }
+        .btn-logout { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 500; cursor: pointer; }
+        input[type="file"] { font-size: 12px; padding: 8px; background: #fafafa; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Olá, <span id="nome-exibicao" style="color: var(--primary);"></span>! 👋</h2>
+        <p id="coords">📍 Localização: Obtendo coordenadas...</p>
+        
+        <label>Qual o status agora?</label>
+        <select id="status-viagem">
+            <option value="Em deslocamento">🚚 Em deslocamento</option>
+            <option value="No local">📍 No local</option>
+            <option value="Carregando">📦 Carregando</option>
+            <option value="Descarregando">📥 Descarregando</option>
+        </select>
 
-        <div id="login-card" class="hidden p-8 md:p-10">
-          <form id="driver-login-form" class="mx-auto max-w-md space-y-5">
-            <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Usuário</label>
-              <input id="driver-username" type="text" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200" placeholder="Digite seu usuário" required />
-            </div>
+        <label>Sua Foto (Selfie):</label>
+        <input type="file" id="foto-motorista" accept="image/*">
+        
+        <label>Foto do Veículo:</label>
+        <input type="file" id="foto-carro" accept="image/*">
 
-            <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Senha</label>
-              <input id="driver-password" type="password" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200" placeholder="Digite sua senha" required />
-            </div>
-
-            <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-700">
-              Entrar no sistema
-            </button>
-
-            <div id="login-message" class="hidden rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              Credenciais inválidas. Verifique os dados de acesso.
-            </div>
-          </form>
-        </div>
-
-        <div id="checkin-card" class="p-8 md:p-10">
-          <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500">Motorista logado</p>
-              <h2 id="welcome-name" class="mt-1 text-2xl font-extrabold text-slate-800">Motorista</h2>
-            </div>
-            <div class="flex items-center gap-3">
-              <span id="driver-badge" class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">@motorista</span>
-              <button id="logout-btn" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-red-200 hover:text-red-600">
-                Sair
-              </button>
-            </div>
-          </div>
-
-          <form id="checkin-form" class="space-y-6">
-            <div class="grid gap-6 lg:grid-cols-2">
-              <div class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div>
-                  <label class="mb-2 block text-sm font-semibold text-slate-700">Identificação do motorista</label>
-                  <input type="text" value="Motorista em operação" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 outline-none" readonly />
-                </div>
-
-                <div>
-                  <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
-                  <select id="driver-status" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200">
-                    <option value="em_deslocamento">Em deslocamento</option>
-                    <option value="no_local">No local</option>
-                    <option value="carregando">Carregando</option>
-                    <option value="descarregando">Descarregando</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label class="mb-2 block text-sm font-semibold text-slate-700">Data e hora</label>
-                  <input id="checkin-datetime" type="text" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 outline-none" readonly />
-                </div>
-
-                <div>
-                  <span id="location-text" class="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
-                    <i class="fa-solid fa-location-dot"></i>
-                    Aguardando geolocalização...
-                  </span>
-                </div>
-              </div>
-
-              <div class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div>
-                  <label class="mb-3 block text-sm font-semibold text-slate-700">Foto do motorista</label>
-                  <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-3">
-                    <video id="driver-video" class="hidden h-48 w-full rounded-xl object-cover" autoplay muted playsinline></video>
-                    <img id="driver-photo" class="hidden h-48 w-full rounded-xl object-cover" alt="Foto do motorista" />
-                    <div class="mt-3 flex gap-2">
-                      <button type="button" id="capture-driver-photo" class="flex-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Abrir câmera</button>
-                      <button type="button" id="clear-driver-photo" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400">Limpar</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label class="mb-3 block text-sm font-semibold text-slate-700">Foto do veículo</label>
-                  <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-3">
-                    <video id="vehicle-video" class="hidden h-48 w-full rounded-xl object-cover" autoplay muted playsinline></video>
-                    <img id="vehicle-photo" class="hidden h-48 w-full rounded-xl object-cover" alt="Foto do veículo" />
-                    <div class="mt-3 flex gap-2">
-                      <button type="button" id="capture-vehicle-photo" class="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Abrir câmera</button>
-                      <button type="button" id="clear-vehicle-photo" class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400">Limpar</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <div id="status-message" class="hidden"></div>
-              <button id="submit-checkin" type="submit" class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white opacity-50 transition hover:bg-emerald-700 disabled:cursor-not-allowed" disabled>
-                Enviar dados para o painel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+        <button id="btn-atualizar">ENVIAR ATUALIZAÇÃO</button>
+        <button onclick="location.href='index.html'" class="btn-logout">Sair do Sistema</button>
     </div>
 
-    <script type="module" src="bd.js"></script>
-    <script type="module" src="app.js"></script>
-    <script>
-      const datetimeInput = document.getElementById('checkin-datetime');
-      const updateDateTime = () => {
-        const now = new Date();
-        datetimeInput.value = now.toLocaleString('pt-BR');
-      };
-      updateDateTime();
-      setInterval(updateDateTime, 1000);
+    <script type="module">
+        import { database, ref, update } from './BD.js';
+
+        const motoristaNome = localStorage.getItem('motorista_nome') || 'Anonimo';
+        document.getElementById('nome-exibicao').innerText = motoristaNome;
+
+        let lat = 0, lon = 0;
+        let fotoMotoBase64 = "", fotoCarroBase64 = "";
+
+        // Geolocalização
+        navigator.geolocation.watchPosition(pos => {
+            lat = pos.coords.latitude;
+            lon = pos.coords.longitude;
+            document.getElementById('coords').innerText = `📍 Localização: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+        }, err => console.error(err), { enableHighAccuracy: true });
+
+        // Helper para converter imagem em Base64
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        document.getElementById('btn-atualizar').addEventListener('click', async () => {
+            const status = document.getElementById('status-viagem').value;
+            const fileM = document.getElementById('foto-motorista').files[0];
+            const fileC = document.getElementById('foto-carro').files[0];
+
+            const originalText = document.getElementById('btn-atualizar').innerText;
+            document.getElementById('btn-atualizar').innerText = "Enviando...";
+            document.getElementById('btn-atualizar').disabled = true;
+
+            try {
+                if(fileM) fotoMotoBase64 = await toBase64(fileM);
+                if(fileC) fotoCarroBase64 = await toBase64(fileC);
+
+                const updates = {};
+                updates['/motoristas/' + motoristaNome] = {
+                    nome: motoristaNome,
+                    status: status,
+                    lat: lat,
+                    lon: lon,
+                    fotoMotorista: fotoMotoBase64,
+                    fotoCarro: fotoCarroBase64,
+                    ultimaAtualizacao: new Date().toLocaleString()
+                };
+
+                await update(ref(database), updates);
+                alert("Dados atualizados com sucesso!");
+            } catch (err) {
+                alert("Erro ao atualizar: " + err.message);
+            } finally {
+                document.getElementById('btn-atualizar').innerText = originalText;
+                document.getElementById('btn-atualizar').disabled = false;
+            }
+        });
     </script>
-  </body>
+</body>
 </html>
