@@ -239,14 +239,14 @@ checkinForm.addEventListener('submit', async (event) => {
     await saveCheckin(registration);
   } catch (error) {
     console.error('Erro ao salvar check-in:', error);
-    showToast('Não foi possível salvar no banco. Verifique a conexão e as regras do Firebase.', 'error');
+    showToast(`${error.message} Verifique a conexão e as regras do Firebase.`, 'error');
     validateForm();
     return;
   }
 
   showToast('Check-in enviado com sucesso para o painel administrativo.', 'success');
   checkinForm.reset();
-  statusSelect.value = 'online';
+  statusSelect.value = 'em_deslocamento';
   driverPhotoData = '';
   vehiclePhotoData = '';
   geoCoords = null;
