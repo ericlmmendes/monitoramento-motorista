@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EVO Transportes | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif']
+            }
+          }
+        }
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-800">
+    <div class="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 py-10">
+      <div class="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-10 text-white">
+          <div class="flex items-center gap-3">
+            <div class="rounded-xl bg-white/10 p-3">
+              <i class="fa-solid fa-truck-fast text-2xl"></i>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-indigo-100">EVO Transportes</p>
+              <h1 class="mt-2 text-3xl font-extrabold">Login</h1>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-8 md:p-10">
+          <form id="login-form" class="space-y-5">
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-slate-700">Usuário</label>
+              <input id="username" type="text" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200" placeholder="Digite seu usuário" required />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-slate-700">Senha</label>
+              <input id="password" type="password" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200" placeholder="Digite sua senha" required />
+            </div>
+
+            <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 active:scale-[0.99]">
+              Entrar no sistema
+            </button>
+
+            <div class="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+              Acesso do administrador: EricLM / Evo@537361<br />
+              Acesso do motorista: motorista01 / 123456
+            </div>
+
+            <div id="login-error" class="hidden rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              Credenciais inválidas. Verifique os dados de acesso.
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { getUserByUsername } from './bd.js';
+
+      const legacyAdmins = [
+        { username: 'admin', password: 'admin123', role: 'admin' },
+        { username: 'EricLM', password: 'Evo@537361', role: 'admin' }
+      ];
+
+      const form = document.getElementById('login-form');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const errorBox = document.getElementById('login-error');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        const dbUser = await getUserByUsername(username);
+        const validUser = dbUser && dbUser.password === password && dbUser.role;
+        const legacyAdmin = legacyAdmins.find((user) => user.username.toLowerCase() === username.toLowerCase() && user.password === password);
+
+        if (validUser) {
+          errorBox.classList.add('hidden');
+          if (dbUser.role === 'admin') {
+            window.location.href = 'painel.html';
+          } else if (dbUser.role === 'motorista') {
+            window.location.href = 'motorista.html';
+          }
+          return;
+        }
+
+        if (legacyAdmin) {
+          errorBox.classList.add('hidden');
+          if (legacyAdmin.role === 'admin') {
+            window.location.href = 'painel.html';
+          }
+          return;
+        }
+
+        errorBox.classList.remove('hidden');
+      });
+    </script>
+  </body>
+</html>
