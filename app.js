@@ -20,6 +20,7 @@ const clearVehicleBtn = document.getElementById('clear-vehicle-photo');
 const submitBtn = document.getElementById('submit-checkin');
 const logoutBtn = document.getElementById('logout-btn');
 const checkinForm = document.getElementById('checkin-form');
+const driverNameInput = document.querySelector('input[value="Motorista em operação"]');
 
 let currentDriver = null;
 let driverStream = null;
@@ -30,23 +31,24 @@ let geoCoords = null;
 
 function showToast(message, type = 'success') {
   statusMessage.textContent = message;
-  statusMessage.className = `rounded-xl border px-3 py-2 text-sm ${
+  statusMessage.className = `rounded-xl border px-3 py-2 text-sm animate-pulse ${
     type === 'success'
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
       : 'border-red-200 bg-red-50 text-red-700'
   }`;
   statusMessage.classList.remove('hidden');
+  setTimeout(() => statusMessage.classList.remove('animate-pulse'), 3000);
 }
 
 function updateGeoStatus() {
   if (!geoCoords) {
-    locationText.textContent = 'Aguardando geolocalização...';
+    locationText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Aguardando geolocalização...';
     locationText.className = 'inline-flex items-center gap-2 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700';
     return;
   }
 
   const locationLabel = `Lat ${geoCoords.latitude.toFixed(5)} · Lng ${geoCoords.longitude.toFixed(5)}`;
-  locationText.textContent = `Localização autorizada: ${locationLabel}`;
+  locationText.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Localização autorizada: ${locationLabel}`;
   locationText.className = 'inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700';
 }
 
@@ -65,12 +67,12 @@ function startLocationTracking() {
         timestamp: new Date().toISOString()
       };
       updateGeoStatus();
-      showToast('Geolocalização capturada com sucesso.', 'success');
+      validateForm();
     },
     () => {
       geoCoords = null;
       updateGeoStatus();
-      showToast('Não foi possível acessar a localização do dispositivo.', 'error');
+      showToast('Por favor, ative o GPS para prosseguir.', 'error');
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
@@ -83,7 +85,7 @@ function stopStream(stream) {
 
 async function openCamera(type) {
   if (!navigator.mediaDevices?.getUserMedia) {
-    showToast('A câmera exige HTTPS ou localhost. Abra o projeto por um servidor local.', 'error');
+    showToast('A câmera exige HTTPS.', 'error');
     return;
   }
 
@@ -101,7 +103,7 @@ async function openCamera(type) {
       await driverVideo.play();
       driverVideo.classList.remove('hidden');
       driverVideo.classList.add('block');
-      captureDriverBtn.textContent = 'Capturar selfie';
+      captureDriverBtn.innerHTML = '<i class="fa-solid fa-camera mr-2"></i>Capturar selfie';
     } else {
       stopStream(vehicleStream);
       vehicleStream = stream;
@@ -109,32 +111,30 @@ async function openCamera(type) {
       await vehicleVideo.play();
       vehicleVideo.classList.remove('hidden');
       vehicleVideo.classList.add('block');
-      captureVehicleBtn.textContent = 'Capturar veículo';
+      captureVehicleBtn.innerHTML = '<i class="fa-solid fa-truck-pickup mr-2"></i>Capturar veículo';
     }
   } catch (error) {
-    console.error('Erro ao abrir a câmera:', error);
-    showToast('Não foi possível acessar a câmera. Verifique HTTPS, permissões e se outro app está usando-a.', 'error');
+    showToast('Acesso à câmera negado.', 'error');
   }
 }
 
 function resizePhoto(video) {
-  const maxSize = 1280;
+  const maxSize = 1024;
   const scale = Math.min(1, maxSize / Math.max(video.videoWidth, video.videoHeight));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(video.videoWidth * scale);
   canvas.height = Math.round(video.videoHeight * scale);
-
   const context = canvas.getContext('2d');
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.75);
+  return canvas.toDataURL('image/jpeg', 0.7);
 }
 
 function capturePhoto(type) {
   const video = type === 'driver' ? driverVideo : vehicleVideo;
   const stream = type === 'driver' ? driverStream : vehicleStream;
 
-  if (!video || !video.videoWidth || !video.videoHeight) {
-    showToast('Primeiro abra a câmera antes de capturar a foto.', 'error');
+  if (!video || !video.videoWidth) {
+    showToast('Aguarde a inicialização da câmera.', 'error');
     return;
   }
 
@@ -145,18 +145,19 @@ function capturePhoto(type) {
     driverPhoto.src = photoData;
     driverPhoto.classList.remove('hidden');
     driverVideo.classList.add('hidden');
+    captureDriverBtn.textContent = 'Refazer selfie';
   } else {
     vehiclePhotoData = photoData;
     vehiclePhoto.src = photoData;
     vehiclePhoto.classList.remove('hidden');
     vehicleVideo.classList.add('hidden');
+    captureVehicleBtn.textContent = 'Refazer veículo';
   }
 
   stopStream(stream);
   if (type === 'driver') driverStream = null;
   else vehicleStream = null;
 
-  showToast('Foto capturada com sucesso.', 'success');
   validateForm();
 }
 
@@ -165,10 +166,12 @@ function clearPhoto(type) {
     driverPhotoData = '';
     driverPhoto.src = '';
     driverPhoto.classList.add('hidden');
+    captureDriverBtn.textContent = 'Abrir câmera';
   } else {
     vehiclePhotoData = '';
     vehiclePhoto.src = '';
     vehiclePhoto.classList.add('hidden');
+    captureVehicleBtn.textContent = 'Abrir câmera';
   }
   validateForm();
 }
@@ -177,11 +180,13 @@ function validateForm() {
   const canSubmit = Boolean(driverPhotoData) && Boolean(vehiclePhotoData) && Boolean(geoCoords) && Boolean(currentDriver);
   submitBtn.disabled = !canSubmit;
   submitBtn.classList.toggle('opacity-50', !canSubmit);
+  submitBtn.classList.toggle('cursor-not-allowed', !canSubmit);
 }
 
 function renderDriverScreen() {
   document.getElementById('welcome-name').textContent = currentDriver.name;
   document.getElementById('driver-badge').textContent = `@${currentDriver.username}`;
+  if(driverNameInput) driverNameInput.value = currentDriver.name;
   loginCard.classList.add('hidden');
   checkinCard.classList.remove('hidden');
   startLocationTracking();
@@ -190,15 +195,12 @@ function renderDriverScreen() {
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-
   const username = document.getElementById('driver-username').value.trim();
   const password = document.getElementById('driver-password').value.trim();
-
   const user = await getUserByUsername(username);
 
   if (!user || user.password !== password || user.role !== 'motorista') {
     loginMessage.classList.remove('hidden');
-    loginMessage.textContent = 'Credenciais inválidas. Verifique usuário e senha.';
     return;
   }
 
@@ -211,18 +213,12 @@ loginForm.addEventListener('submit', async (event) => {
 checkinForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  if (!currentDriver || !geoCoords) {
-    showToast('Preencha os dados obrigatórios antes de enviar.', 'error');
-    return;
-  }
-
-  if (!driverPhotoData || !vehiclePhotoData) {
-    showToast('É necessário capturar as duas fotos para continuar.', 'error');
+  if (!currentDriver || !geoCoords || !driverPhotoData || !vehiclePhotoData) {
+    showToast('Dados incompletos.', 'error');
     return;
   }
 
   const registration = {
-    id: Date.now().toString(),
     driverUsername: currentDriver.username,
     driverName: currentDriver.name,
     status: statusSelect.value,
@@ -236,60 +232,42 @@ checkinForm.addEventListener('submit', async (event) => {
 
   try {
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Enviando...';
     await saveCheckin(registration);
-  } catch (error) {
-    console.error('Erro ao salvar check-in:', error);
-    showToast(`${error.message} Verifique a conexão e as regras do Firebase.`, 'error');
+    showToast('Check-in enviado com sucesso!', 'success');
+    
+    // Reset parciais (preservar login)
+    driverPhotoData = '';
+    vehiclePhotoData = '';
+    driverPhoto.classList.add('hidden');
+    vehiclePhoto.classList.add('hidden');
+    captureDriverBtn.textContent = 'Abrir câmera';
+    captureVehicleBtn.textContent = 'Abrir câmera';
     validateForm();
-    return;
+  } catch (error) {
+    showToast('Erro ao salvar no banco.', 'error');
+  } finally {
+    submitBtn.innerHTML = 'Enviar dados para o painel';
+    validateForm();
   }
-
-  showToast('Check-in enviado com sucesso para o painel administrativo.', 'success');
-  checkinForm.reset();
-  statusSelect.value = 'em_deslocamento';
-  driverPhotoData = '';
-  vehiclePhotoData = '';
-  geoCoords = null;
-  updateGeoStatus();
-  driverPhoto.classList.add('hidden');
-  vehiclePhoto.classList.add('hidden');
-  validateForm();
 });
 
 captureDriverBtn.addEventListener('click', () => {
-  if (driverStream) {
-    capturePhoto('driver');
-    return;
-  }
+  if (driverStream) { capturePhoto('driver'); return; }
   openCamera('driver');
 });
 
 captureVehicleBtn.addEventListener('click', () => {
-  if (vehicleStream) {
-    capturePhoto('vehicle');
-    return;
-  }
+  if (vehicleStream) { capturePhoto('vehicle'); return; }
   openCamera('vehicle');
 });
 
 clearDriverBtn.addEventListener('click', () => clearPhoto('driver'));
 clearVehicleBtn.addEventListener('click', () => clearPhoto('vehicle'));
+
 logoutBtn.addEventListener('click', () => {
   localStorage.removeItem(SESSION_KEY);
-  currentDriver = null;
-  geoCoords = null;
-  driverPhotoData = '';
-  vehiclePhotoData = '';
-  driverPhoto.classList.add('hidden');
-  vehiclePhoto.classList.add('hidden');
-  loginMessage.classList.add('hidden');
-  statusMessage.classList.add('hidden');
-  locationText.textContent = 'Aguardando geolocalização...';
-  loginCard.classList.remove('hidden');
-  checkinCard.classList.add('hidden');
-  checkinForm.reset();
-  document.getElementById('driver-login-form').reset();
-  document.getElementById('driver-status').value = 'online';
+  location.reload();
 });
 
 const savedSession = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
@@ -299,5 +277,4 @@ if (savedSession) {
 }
 
 statusSelect.addEventListener('change', validateForm);
-startLocationTracking();
 validateForm();
