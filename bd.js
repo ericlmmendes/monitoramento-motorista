@@ -70,14 +70,21 @@ export async function getUserByUsername(username) {
 }
 
 export async function saveCheckin(data) {
-  const id = data.id || push(ref(db, 'checkins')).key;
+  const checkinRef = data.id ? ref(db, `checkins/${data.id}`) : push(ref(db, 'checkins'));
+  const id = checkinRef.key;
   const payload = {
     ...data,
     id,
     createdAt: serverTimestamp()
   };
 
-  await set(ref(db, `checkins/${id}`), payload);
+  try {
+    await set(checkinRef, payload);
+  } catch (error) {
+    const reason = error?.code ? ` (${error.code})` : '';
+    throw new Error(`Falha ao salvar o check-in${reason}.`, { cause: error });
+  }
+
   return id;
 }
 
