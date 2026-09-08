@@ -82,6 +82,11 @@ function stopStream(stream) {
 }
 
 async function openCamera(type) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showToast('A câmera exige HTTPS ou localhost. Abra o projeto por um servidor local.', 'error');
+    return;
+  }
+
   const constraints = {
     video: { facingMode: type === 'driver' ? 'user' : { ideal: 'environment' } },
     audio: false
@@ -93,6 +98,7 @@ async function openCamera(type) {
       stopStream(driverStream);
       driverStream = stream;
       driverVideo.srcObject = stream;
+      await driverVideo.play();
       driverVideo.classList.remove('hidden');
       driverVideo.classList.add('block');
       captureDriverBtn.textContent = 'Capturar selfie';
@@ -100,13 +106,27 @@ async function openCamera(type) {
       stopStream(vehicleStream);
       vehicleStream = stream;
       vehicleVideo.srcObject = stream;
+      await vehicleVideo.play();
       vehicleVideo.classList.remove('hidden');
       vehicleVideo.classList.add('block');
       captureVehicleBtn.textContent = 'Capturar veículo';
     }
   } catch (error) {
-    showToast('Não foi possível acessar a câmera. Verifique as permissões do navegador.', 'error');
+    console.error('Erro ao abrir a câmera:', error);
+    showToast('Não foi possível acessar a câmera. Verifique HTTPS, permissões e se outro app está usando-a.', 'error');
   }
+}
+
+function resizePhoto(video) {
+  const maxSize = 1280;
+  const scale = Math.min(1, maxSize / Math.max(video.videoWidth, video.videoHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+
+  const context = canvas.getContext('2d');
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.75);
 }
 
 function capturePhoto(type) {
@@ -118,14 +138,7 @@ function capturePhoto(type) {
     return;
   }
 
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const context = canvas.getContext('2d');
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const photoData = canvas.toDataURL('image/jpeg', 0.9);
+  const photoData = resizePhoto(video);
 
   if (type === 'driver') {
     driverPhotoData = photoData;
@@ -221,7 +234,15 @@ checkinForm.addEventListener('submit', async (event) => {
     checkedAt: new Date().toISOString()
   };
 
-  await saveCheckin(registration);
+  try {
+    submitBtn.disabled = true;
+    await saveCheckin(registration);
+  } catch (error) {
+    console.error('Erro ao salvar check-in:', error);
+    showToast('Não foi possível salvar no banco. Verifique a conexão e as regras do Firebase.', 'error');
+    validateForm();
+    return;
+  }
 
   showToast('Check-in enviado com sucesso para o painel administrativo.', 'success');
   checkinForm.reset();
