@@ -70,16 +70,19 @@ export async function getUserByUsername(username) {
 }
 
 export async function saveCheckin(data) {
-  const checkinRef = data.id ? ref(db, `checkins/${data.id}`) : push(ref(db, 'checkins'));
-  const id = checkinRef.key;
+  const checkinsListRef = ref(db, 'checkins');
+  const newCheckinRef = push(checkinsListRef);
+  const id = newCheckinRef.key;
+  
   const payload = {
     ...data,
     id,
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    userAgent: navigator.userAgent
   };
 
   try {
-    await set(checkinRef, payload);
+    await set(newCheckinRef, payload);
   } catch (error) {
     const reason = error?.code ? ` (${error.code})` : '';
     throw new Error(`Falha ao salvar o check-in${reason}.`, { cause: error });
@@ -100,6 +103,7 @@ export function subscribeCheckins(callback) {
   });
 }
 
+// Inicialização
 initDatabase();
 
 export { db, ref, get, set, child, push, onValue, update, remove, serverTimestamp };
