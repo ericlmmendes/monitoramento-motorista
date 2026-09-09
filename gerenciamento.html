@@ -153,6 +153,17 @@
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
         .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn-save { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-edit { background: #dbeafe; color: #1d4ed8; border: none; padding: 8px 12px; border-radius: 7px; cursor: pointer; font-weight: 600; margin-top: 12px; }
+        .chat-box { margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+        .chat-title { font-weight: 700; margin-bottom: 8px; color: #0f172a; }
+        .chat-messages { height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; padding: 8px; background: #f8fafc; border-radius: 8px; }
+        .chat-message { max-width: 85%; padding: 7px 9px; border-radius: 9px; display: grid; gap: 2px; font-size: 12px; }
+        .chat-message.mine { align-self: flex-end; background: #dbeafe; }
+        .chat-message.theirs { align-self: flex-start; background: #e2e8f0; }
+        .chat-message small { color: #64748b; }
+        .chat-form { display: flex; gap: 6px; margin-top: 7px; }
+        .chat-form input { margin: 0; flex: 1; }
+        .chat-form button { width: 42px; background: var(--primary); color: white; border: 0; border-radius: 8px; cursor: pointer; }
 
         #modal-zoom {
             display: none;
@@ -186,12 +197,14 @@
     <div class="modal" id="modal-cadastro">
         <div class="modal-content">
             <h3><i class="fa-solid fa-user-plus"></i> Novo Motorista</h3>
-            <p style="font-size: 13px; color: #64748b;">Defina as credenciais de acesso do motorista.</p>
+            <p id="modal-descricao" style="font-size: 13px; color: #64748b;">Defina as credenciais de acesso do motorista.</p>
             <input type="text" id="novo-nome-motorista" placeholder="Nome de Usuário">
             <input type="password" id="nova-senha-motorista" placeholder="Senha de Acesso">
+            <input type="text" id="nova-placa-motorista" placeholder="Placa do veículo">
+            <input type="text" id="nova-rota-motorista" placeholder="Rota">
             <div class="modal-buttons">
                 <button class="btn-cancel" id="btn-fechar-modal">Cancelar</button>
-                <button class="btn-save" id="btn-salvar-motorista">Criar Conta</button>
+                <button class="btn-save" id="btn-salvar-motorista">Salvar</button>
             </div>
         </div>
     </div>
@@ -202,6 +215,7 @@
 
     <script type="module">
         import { database, ref, onValue, set, remove } from './BD.js';
+        import { montarChat } from './chat.js';
 
         const listaContainer = document.getElementById('lista-motoristas');
         const modal = document.getElementById('modal-cadastro');
@@ -210,9 +224,34 @@
         const btnSalvarMotorista = document.getElementById('btn-salvar-motorista');
         const inputNome = document.getElementById('novo-nome-motorista');
         const inputSenha = document.getElementById('nova-senha-motorista');
+        const inputPlaca = document.getElementById('nova-placa-motorista');
+        const inputRota = document.getElementById('nova-rota-motorista');
+        const modalTitulo = modal.querySelector('h3');
+        let motoristaEmEdicao = null;
 
-        btnAbrirModal.onclick = () => modal.style.display = 'flex';
+        btnAbrirModal.onclick = () => {
+            motoristaEmEdicao = null;
+            modalTitulo.innerHTML = '<i class="fa-solid fa-user-plus"></i> Novo Motorista';
+            document.getElementById('modal-descricao').innerText = 'Defina as credenciais de acesso do motorista.';
+            inputNome.disabled = false;
+            inputSenha.value = '';
+            inputPlaca.value = '';
+            inputRota.value = '';
+            modal.style.display = 'flex';
+        };
         btnFecharModal.onclick = () => modal.style.display = 'none';
+
+        window.editarMotorista = (nome, dados) => {
+            motoristaEmEdicao = nome;
+            modalTitulo.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Motorista';
+            document.getElementById('modal-descricao').innerText = 'Atualize as informações operacionais do motorista.';
+            inputNome.value = dados.nome || nome;
+            inputNome.disabled = true;
+            inputSenha.value = dados.senha || '';
+            inputPlaca.value = dados.placa || '';
+            inputRota.value = dados.rota || '';
+            modal.style.display = 'flex';
+        };
 
         window.zoomImg = (src) => {
             const mz = document.getElementById('modal-zoom');
@@ -233,11 +272,16 @@
         btnSalvarMotorista.onclick = async () => {
             const nome = inputNome.value.trim();
             const senha = inputSenha.value.trim();
+            const placa = inputPlaca.value.trim();
+            const rota = inputRota.value.trim();
             if (nome && senha) {
                 try {
-                    await set(ref(database, 'motoristas/' + nome), {
+                    const nomeBanco = motoristaEmEdicao || nome;
+                    await set(ref(database, 'motoristas/' + nomeBanco), {
                         nome: nome,
                         senha: senha,
+                        placa,
+                        rota,
                         status: "Cadastrado",
                         lat: 0,
                         lon: 0,
@@ -248,6 +292,10 @@
                     modal.style.display = 'none';
                     inputNome.value = "";
                     inputSenha.value = "";
+                    inputPlaca.value = "";
+                    inputRota.value = "";
+                    inputNome.disabled = false;
+                    motoristaEmEdicao = null;
                 } catch (e) {
                     alert("Erro ao salvar no banco de dados.");
                 }
@@ -292,6 +340,11 @@
                                 </a>
                             </p>
                             <p><i class="fa-regular fa-clock"></i> <strong>Última Sincronia:</strong> ${m.ultimaAtualizacao}</p>
+                            <p><i class="fa-solid fa-id-card"></i> <strong>Placa:</strong> ${m.placa || 'Não informada'}</p>
+                            <p><i class="fa-solid fa-route"></i> <strong>Rota:</strong> ${m.rota || 'Não informada'}</p>
+                            <button class="btn-edit" onclick='editarMotorista(${JSON.stringify(m.nome)}, ${JSON.stringify(m)})'><i class="fa-solid fa-pen-to-square"></i> Editar informações</button>
+                            <a class="btn-edit" style="display:inline-block; text-decoration:none;" href="visualizacao.html?motorista=${encodeURIComponent(m.nome)}"><i class="fa-solid fa-eye"></i> Visualizar</a>
+                            <div id="chat-${key.replace(/[^a-zA-Z0-9_-]/g, '-')}"></div>
                             <div style="margin-top:12px;">
                                 <small style="font-weight:700; color:#94a3b8; font-size:10px; text-transform:uppercase;">Registro do Veículo</small>
                                 <img src="${m.fotoCarro || 'https://via.placeholder.com/300x120?text=Sem+Foto+do+Veículo'}" class="veiculo-img" onclick="zoomImg(this.src)">
@@ -299,6 +352,7 @@
                         </div>
                     `;
                     listaContainer.appendChild(card);
+                    montarChat({ database, containerId: `chat-${key.replace(/[^a-zA-Z0-9_-]/g, '-')}`, nomeUsuario: 'gerenciamento', destinatario: m.nome, chatId: m.nome });
                 });
             } else {
                 listaContainer.innerHTML = `
